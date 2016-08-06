@@ -19,12 +19,13 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Welcome"
-            android:textSize="80sp" />
+            android:textSize="70sp" />
 
         <Button
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Get Started!"/>
+            android:text="Get Started!"
+            android:id="@+id/get_started"/>
     </LinearLayout>
 
     <LinearLayout
