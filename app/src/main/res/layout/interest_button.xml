@@ -15,7 +15,6 @@
         android:layout_marginRight="20dp"
         android:layout_margin="20dp"
         android:background="@drawable/rounded_button"
-        android:text="temp"
-        android:textSize="15sp" />
+        android:text="temp" />
 
 </LinearLayout>

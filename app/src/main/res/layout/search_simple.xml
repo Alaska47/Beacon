@@ -6,7 +6,11 @@
     <android.support.design.widget.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_gravity="center" >
+        android:layout_gravity="center"
+        app:counterEnabled="true"
+        app:counterMaxLength="20"
+        app:counterTextAppearance="@style/counterText"
+        app:counterOverflowTextAppearance="@style/counterOverride" >
         <EditText
             android:layout_width="match_parent"
             android:id="@+id/next_interest"

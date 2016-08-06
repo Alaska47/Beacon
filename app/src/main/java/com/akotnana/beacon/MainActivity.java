@@ -24,6 +24,8 @@ import android.support.design.widget.Snackbar;
 import android.support.v4.content.FileProvider;
 import android.support.v4.content.res.ResourcesCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -42,6 +44,11 @@ import com.makeramen.roundedimageview.RoundedImageView;
 import com.wefika.flowlayout.FlowLayout;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+
+import uk.co.deanwild.materialshowcaseview.MaterialShowcaseSequence;
+import uk.co.deanwild.materialshowcaseview.ShowcaseConfig;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -60,6 +67,9 @@ public class MainActivity extends AppCompatActivity {
     private String interestName;
     private LinearLayout tagsLayout;
 
+    private List<Beacon> persons;
+    private RecyclerView rv;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -77,11 +87,51 @@ public class MainActivity extends AppCompatActivity {
                 displayCreateDialog(view);
             }
         });
+
+        rv = (RecyclerView)findViewById(R.id.recycler_view);
+
+        LinearLayoutManager llm = new LinearLayoutManager(this);
+        rv.setLayoutManager(llm);
+        rv.setHasFixedSize(true);
+
+        initializeData();
+        initializeAdapter();
+
+        ShowcaseConfig config = new ShowcaseConfig();
+        config.setDelay(500); // half second between each showcase view
+
+        MaterialShowcaseSequence sequence = new MaterialShowcaseSequence(this);
+
+        sequence.setConfig(config);
+
+        sequence.addSequenceItem(imageContainerMain.getChildAt(0),
+                "Images posted near your location", "GOT IT");
+
+        sequence.addSequenceItem(rv,
+                "Beacons that match your specified interests", "GOT IT");
+
+        sequence.addSequenceItem(fab,
+                "Add beacons at your current location", "GOT IT");
+
+        sequence.start();
+
+    }
+
+    private void initializeData(){
+        persons = new ArrayList<>();
+        persons.add(new Beacon("Club", "#gay\t#gay\t#gay", R.drawable.red_pin));
+        persons.add(new Beacon("Swimming", "#gay\t#gay\t#gay", R.drawable.red_pin));
+        persons.add(new Beacon("Shwetark", "#gay\t#gay\t#gay", R.drawable.red_pin));
+    }
+
+    private void initializeAdapter(){
+        RVAdapter adapter = new RVAdapter(persons);
+        rv.setAdapter(adapter);
     }
 
     public void displayCreateDialog(View anchorView) {
         materialDialog = new MaterialDialog.Builder(this)
-                .title("Create beacon")
+                .title("Create Beacon")
                 .customView(R.layout.fragment_share, false)
                 .positiveText("CREATE")
                 .negativeText("CANCEL")
@@ -124,7 +174,6 @@ public class MainActivity extends AppCompatActivity {
                         FlowLayout.LayoutParams layoutParams = new FlowLayout.LayoutParams(FlowLayout.LayoutParams.WRAP_CONTENT, FlowLayout.LayoutParams.WRAP_CONTENT);
                         layoutParams.setMargins(10,10,10,10);
                         button.setPadding(43,43,43,43);
-                        button.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
                         button.setLayoutParams(layoutParams);
                         view.removeView(button);
                         button.setText(interestName);
@@ -152,6 +201,9 @@ public class MainActivity extends AppCompatActivity {
                             }
                         });
                         flowLayout.addView(button, 0);
+                        float y = button.getY();
+                        y += 2;
+                        button.setY(y);
                     }
                 })
                 .onNegative(new MaterialDialog.SingleButtonCallback() {
@@ -182,7 +234,7 @@ public class MainActivity extends AppCompatActivity {
         for(int i = 0; i < 5; i++) {
             RoundedImageView riv = new RoundedImageView(this);
             riv.setScaleType(ImageView.ScaleType.CENTER_CROP);
-            riv.setCornerRadius((float) 10);
+            riv.setCornerRadius((float) 20);
             riv.setImageDrawable(ResourcesCompat.getDrawable(getResources(), R.drawable.concert_crowd, null));
             LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT,LinearLayout.LayoutParams.WRAP_CONTENT);
             layoutParams.setMargins(10, 5, 10, 5);
@@ -195,7 +247,7 @@ public class MainActivity extends AppCompatActivity {
         imageContainer.removeAllViews();
         RoundedImageView riv = new RoundedImageView(this);
         riv.setScaleType(ImageView.ScaleType.CENTER_CROP);
-        riv.setCornerRadius((float) 10);
+        riv.setCornerRadius((float) 20);
         riv.setImageDrawable(item);
         LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT,LinearLayout.LayoutParams.WRAP_CONTENT);
         layoutParams.setMargins(10, 5, 10, 5);
