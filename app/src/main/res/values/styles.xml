@@ -13,6 +13,23 @@
         <item name="windowNoTitle">true</item>
     </style>
 
+    <style name="counterText">
+        <item name="android:textColor">@color/colorAccent</item>
+    </style>
+
+    <style name="counterOverride">
+        <item name="android:textColor">#ff0000</item>
+    </style>
+
+    <style name="BlueButton" parent="Widget.AppCompat.Button.Colored">
+        <item name="colorButtonNormal">#2196F3</item>
+        <item name="android:textColorPrimary">#fff</item>
+    </style>
+    <style name="GreenButton" parent="Widget.AppCompat.Button.Colored">
+        <item name="colorButtonNormal">@color/colorAccent</item>
+        <item name="android:textColorPrimary">#fff</item>
+    </style>
+
     <style name="AppTheme.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
 
     <style name="AppTheme.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
