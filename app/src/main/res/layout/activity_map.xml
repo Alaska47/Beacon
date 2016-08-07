@@ -12,7 +12,7 @@
         android:layout_height="match_parent" />
 
     <Button
-        android:theme="@style/BlueButton"
+        android:theme="@style/Button"
         android:id="@+id/currentLoc"
         android:textSize="15sp"
         android:layout_width="wrap_content"
@@ -22,7 +22,7 @@
         android:text="Current Location" />
 
     <Button
-        android:theme="@style/BlueButton"
+        android:theme="@style/Button"
         android:id="@+id/toggle"
         android:textSize="15sp"
         android:layout_width="wrap_content"

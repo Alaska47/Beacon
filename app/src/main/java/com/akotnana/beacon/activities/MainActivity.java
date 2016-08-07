@@ -1,52 +1,56 @@
-package com.akotnana.beacon;
+package com.akotnana.beacon.activities;
 
-import android.Manifest;
 import android.app.Activity;
-import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Canvas;
-import android.graphics.Matrix;
-import android.graphics.Paint;
 import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
-import android.os.Build;
+import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.Environment;
 import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v4.content.FileProvider;
 import android.support.v4.content.res.ResourcesCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
-import android.util.DisplayMetrics;
 import android.util.Log;
-import android.util.TypedValue;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.PopupWindow;
 
 import com.afollestad.materialdialogs.DialogAction;
 import com.afollestad.materialdialogs.MaterialDialog;
+import com.akotnana.beacon.R;
+import com.akotnana.beacon.utils.Beacon;
+import com.akotnana.beacon.utils.RVAdapter;
 import com.makeramen.roundedimageview.RoundedImageView;
 import com.wefika.flowlayout.FlowLayout;
 
+import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.PrintWriter;
+import java.net.Socket;
+import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
 import uk.co.deanwild.materialshowcaseview.MaterialShowcaseSequence;
 import uk.co.deanwild.materialshowcaseview.ShowcaseConfig;
@@ -77,7 +81,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-
+        getSupportActionBar().setTitle("Beacon");
         imageContainerMain = (LinearLayout) findViewById(R.id.imageContainer);
         loadImages(imageContainerMain);
 
@@ -130,9 +134,10 @@ public class MainActivity extends AppCompatActivity {
 
     private void initializeData(){
         persons = new ArrayList<>();
-        persons.add(new Beacon("Club", "#gay\t#gay\t#gay", R.drawable.red_pin));
-        persons.add(new Beacon("Swimming", "#gay\t#gay\t#gay", R.drawable.red_pin));
-        persons.add(new Beacon("Shwetark", "#gay\t#gay\t#gay", R.drawable.red_pin));
+        persons.add(new Beacon("IncubateDC", "#hack   #hackathon   #entrepreneurship   #android", R.drawable.red_pin));
+        persons.add(new Beacon("Bubble RUN Washington D.C!", "#run   #fitness", R.drawable.red_pin));
+        persons.add(new Beacon("2016 Summer Spirit Festival", "#festival   #fair", R.drawable.red_pin));
+        persons.add(new Beacon("Timbers vs DC United Soccer Game", "#soccer   #tickets   #dcunited", R.drawable.red_pin));
     }
 
     private void initializeAdapter(){
@@ -145,6 +150,21 @@ public class MainActivity extends AppCompatActivity {
                 .title("Create Beacon")
                 .customView(R.layout.fragment_share, false)
                 .positiveText("CREATE")
+                .onPositive(new MaterialDialog.SingleButtonCallback() {
+                    @Override
+                    public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
+                        File path = new File(getFilesDir(), "beacon_images/");
+                        if (!path.exists()) path.mkdirs();
+                        File image = new File(path, "image.jpg");
+                        try {
+                            new ImageSender().execute(image.getAbsolutePath()).get();
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        } catch (ExecutionException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                })
                 .negativeText("CANCEL")
                 .build();
 
@@ -317,4 +337,154 @@ public class MainActivity extends AppCompatActivity {
 
         return BitmapFactory.decodeFile(path, options);
     }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.main, menu);
+        return true;
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.action_profile:
+                Intent intent = new Intent(this, ProfileActivity.class);
+                startActivity(intent);
+                overridePendingTransition(R.anim.fade_in, R.anim.fade_out);
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
+    }
+
+    public Bitmap bitmapSizeByScale( Bitmap bitmapIn, float scall_zero_to_one_f) {
+
+        Bitmap bitmapOut = Bitmap.createScaledBitmap(bitmapIn,
+                Math.round(bitmapIn.getWidth() * scall_zero_to_one_f),
+                Math.round(bitmapIn.getHeight() * scall_zero_to_one_f), false);
+
+        return bitmapOut;
+    }
+
+    class ImageRetriever extends AsyncTask< Void, Void, Drawable[] > {
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+        }
+
+        @Override
+        protected Drawable[] doInBackground(Void...params) {
+            Socket socket = null;
+            ObjectOutputStream oos = null;
+            ObjectInputStream ois = null;
+            Drawable[] dd = null;
+            try {
+                socket = new Socket("alaskapi4713.ddns.net", 1337);
+                oos = new ObjectOutputStream(socket.getOutputStream());
+                ois = new ObjectInputStream(socket.getInputStream());
+                oos.writeObject(1); //case1
+                int numImages = (int) ois.readObject();
+                dd = new Drawable[numImages];
+                for(int i = 0; i < numImages; i++) {
+                    byte[] bb = (byte[]) ois.readObject();
+                    Bitmap bitmap = BitmapFactory.decodeByteArray(bb , 0, bb .length);
+                    Drawable d = new BitmapDrawable(getResources(), bitmap);
+                    dd[i] = d;
+                }
+            } catch (UnknownHostException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
+            } finally {
+                if(ois != null)
+                    try {
+                        ois.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                if(oos != null)
+                    try {
+                        oos.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                try {
+                    socket.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            return dd;
+        }
+
+
+
+        protected void onPostExecute(Boolean result) {
+
+        }
+    }
+
+    class ImageSender extends AsyncTask< String, Void, String > {
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+
+        }
+
+        @Override
+        protected String doInBackground(String...params) {
+            Socket socket = null;
+            ObjectOutputStream oos = null;
+            ObjectInputStream ois = null;
+            String message = "";
+            try {
+                socket = new Socket("172.29.24.149", 25565);
+                oos = new ObjectOutputStream(socket.getOutputStream());
+                ois = new ObjectInputStream(socket.getInputStream());
+                String fin = "5 "+ "34.48713" +" "+ "72.219310" +" "+"gay" + " " + "yash" + " " + "homo";
+                oos.writeObject(fin);
+                Bitmap myBitmap = BitmapFactory.decodeFile(params[0]);
+                myBitmap = bitmapSizeByScale(myBitmap, 0.1f);
+                ByteArrayOutputStream stream = new ByteArrayOutputStream();
+                myBitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
+                byte[] byteArray = stream.toByteArray();
+                Log.d("ImageSender", "" + byteArray.length);
+                oos.writeObject(byteArray);
+            } catch (UnknownHostException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            } finally {
+                if(ois != null)
+                    try {
+                        ois.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                if(oos != null)
+                    try {
+                        oos.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                try {
+                    socket.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            return "";
+
+        }
+
+        protected void onPostExecute(boolean result) {
+
+        }
+    }
+
+
 }

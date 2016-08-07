@@ -1,4 +1,4 @@
-package com.akotnana.beacon;
+package com.akotnana.beacon.utils;
 
 /**
  * Created by anees on 8/6/2016.
@@ -10,6 +10,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
+
+import com.akotnana.beacon.R;
 
 import java.util.List;
 
@@ -33,7 +35,7 @@ public class RVAdapter extends RecyclerView.Adapter<RVAdapter.BeaconViewHolder> 
 
     List<Beacon> beacons;
 
-    RVAdapter(List<Beacon> beacons){
+    public RVAdapter(List<Beacon> beacons){
         this.beacons = beacons;
     }
 

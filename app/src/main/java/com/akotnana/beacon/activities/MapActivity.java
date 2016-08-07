@@ -1,30 +1,34 @@
-package com.akotnana.beacon;
+package com.akotnana.beacon.activities;
 
 import android.Manifest;
-import android.app.Activity;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.location.Location;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Message;
 import android.support.design.widget.TextInputEditText;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.PermissionChecker;
-import android.support.v4.content.res.ResourcesCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
+import com.akotnana.beacon.R;
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -35,14 +39,22 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.VisibleRegion;
 import com.google.maps.android.SphericalUtil;
 
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.net.Socket;
+import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
+import java.util.HashMap;
+
 import io.nlopez.smartlocation.OnLocationUpdatedListener;
 import io.nlopez.smartlocation.SmartLocation;
 
-public class MapActivity extends AppCompatActivity implements OnMapReadyCallback {
+public class MapActivity extends AppCompatActivity implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener {
 
     private static final int MESSAGE_ID_SAVE_CAMERA_POSITION = 1;
     private static final int MESSAGE_ID_READ_CAMERA_POSITION = 2;
@@ -58,11 +70,19 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     private Bundle mBundle;
     private Toast mToast;
 
+    private HashMap<String, String> ids = new HashMap<String, String>();
+
+    public static String dataString = "";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_map);
 
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        getSupportActionBar().setHomeButtonEnabled(true);
+
+        getSupportActionBar().setTitle("Map");
 
         if (!selfPermissionGranted(Manifest.permission.ACCESS_FINE_LOCATION) || !selfPermissionGranted(Manifest.permission.ACCESS_COARSE_LOCATION)) {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION},
@@ -107,6 +127,19 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         }
     }
 
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case android.R.id.home:
+                // this takes the user 'back', as if they pressed the left-facing triangle icon on the main android toolbar.
+                // if this doesn't work as desired, another possibility is to call `finish()` here.
+                onBackPressed();
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
+    }
+
     private void toggleMode(View v) {
         if (mMap.getMapType() == GoogleMap.MAP_TYPE_NORMAL) {
             mMap.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
@@ -141,10 +174,10 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
                 Log.d("Dash", "got location");
                 LatLng newLatLng = new LatLng(userLoc.getLatitude(), userLoc.getLongitude());
                 LatLngBounds bounds = new LatLngBounds.Builder().
-                        include(SphericalUtil.computeOffset(newLatLng, 2 * 1609.344d, 0)).
-                        include(SphericalUtil.computeOffset(newLatLng, 2 * 1609.344d, 90)).
-                        include(SphericalUtil.computeOffset(newLatLng, 2 * 1609.344d, 180)).
-                        include(SphericalUtil.computeOffset(newLatLng, 2 * 1609.344d, 270)).build();
+                        include(SphericalUtil.computeOffset(newLatLng, 1.5 * 1609.344d, 0)).
+                        include(SphericalUtil.computeOffset(newLatLng, 1.5 * 1609.344d, 90)).
+                        include(SphericalUtil.computeOffset(newLatLng, 1.5 * 1609.344d, 180)).
+                        include(SphericalUtil.computeOffset(newLatLng, 1.5 * 1609.344d, 270)).build();
                 final CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngBounds(bounds, 0);
                 runOnUiThread(new Runnable() {
                     public void run() {
@@ -168,10 +201,12 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
 
+        /*
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
         } else {
             mMap.setMyLocationEnabled(true);
         }
+        */
 
         Log.d("DashboardFragment", "map ready");
 
@@ -183,7 +218,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
                         @Override
                         public void onLocationUpdated(Location location) {
                             userLoc = location;
-                            Log.d("Got location", location.toString());
+                            //Log.d("Got location", location.toString());
                         }
                     });
 
@@ -192,25 +227,25 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
                     while (userLoc == null) {
                         try {
                             Thread.sleep(100);
+                            //Log.d("Got location", "searching");
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
                     }
                     LatLng newLatLng = new LatLng(userLoc.getLatitude(), userLoc.getLongitude());
                     LatLngBounds bounds = new LatLngBounds.Builder().
-                            include(SphericalUtil.computeOffset(newLatLng, 2 * 1609.344d, 0)).
-                            include(SphericalUtil.computeOffset(newLatLng, 2 * 1609.344d, 90)).
-                            include(SphericalUtil.computeOffset(newLatLng, 2 * 1609.344d, 180)).
-                            include(SphericalUtil.computeOffset(newLatLng, 2 * 1609.344d, 270)).build();
+                            include(SphericalUtil.computeOffset(newLatLng, 1.5 * 1609.344d, 0)).
+                            include(SphericalUtil.computeOffset(newLatLng, 1.5 * 1609.344d, 90)).
+                            include(SphericalUtil.computeOffset(newLatLng, 1.5 * 1609.344d, 180)).
+                            include(SphericalUtil.computeOffset(newLatLng, 1.5 * 1609.344d, 270)).build();
                     final CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngBounds(bounds, 0);
                     runOnUiThread(new Runnable() {
                         public void run() {
                             mMap.moveCamera(cameraUpdate);
-                            mMap.addMarker(new MarkerOptions().position(new LatLng(userLoc.getLatitude(), userLoc.getLongitude())).title("Test").icon(BitmapDescriptorFactory.fromBitmap(bitmapSizeByScale(BitmapFactory.decodeResource(getResources(), R.drawable.red_pin), 0.4f))));
-                            mMap.addMarker(new MarkerOptions().position(new LatLng(userLoc.getLatitude() + 0.005d, userLoc.getLongitude() - 0.005d)).title("Huge").icon(BitmapDescriptorFactory.fromBitmap(bitmapSizeByScale(BitmapFactory.decodeResource(getResources(), R.drawable.red_pin), 0.8f))));
+                            Marker home = mMap.addMarker(new MarkerOptions().position(new LatLng(userLoc.getLatitude(), userLoc.getLongitude())).title("Your location!").icon(BitmapDescriptorFactory.fromBitmap(bitmapSizeByScale(BitmapFactory.decodeResource(getResources(), R.drawable.current_location), 0.4f))));
+                            loadAllMarkers();
                         }
                     });
-
                 }
             }).start();
         } else {
@@ -219,6 +254,19 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         }
 
         handler = new MapStateHandler();
+
+        GoogleMap.OnInfoWindowClickListener InfoWindowListener = new GoogleMap.OnInfoWindowClickListener(){
+            @Override
+            public void onInfoWindowClick(Marker marker) {
+                Log.d("GU", "" + marker.getTitle().equals("Your location!"));
+                if(marker.getTitle().equals("Your location!")) {
+                    marker.hideInfoWindow();
+                }
+            }};
+
+        mMap.setOnInfoWindowClickListener(InfoWindowListener);
+
+        mMap.setOnMarkerClickListener(this);
 
         mMap.setOnCameraChangeListener(new GoogleMap.OnCameraChangeListener() {
             @Override
@@ -229,7 +277,67 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
                 handler.sendEmptyMessageDelayed(MESSAGE_ID_READ_CAMERA_POSITION, 1000);
             }
         });
+        mMap.setOnInfoWindowClickListener(new GoogleMap.OnInfoWindowClickListener() {
+
+            @Override
+            public void onInfoWindowClick(Marker marker) {
+                Intent i = null;
+                if(ids.get(marker.getTitle()).contains("b")) {
+                    i = new Intent(MapActivity.this, BeaconDisplaySponsorActivity.class);
+                } else {
+                    i = new Intent(MapActivity.this, BeaconDisplayActivity.class);
+                }
+                i.putExtra("key", ids.get(marker.getTitle()));
+                startActivity(i);
+                overridePendingTransition(R.anim.pull_in_down, R.anim.push_out_up);
+                Log.d("Map", marker.getTitle());
+
+            }
+        });
+
+        googleMap.setInfoWindowAdapter(new GoogleMap.InfoWindowAdapter() {
+
+            // Use default InfoWindow frame
+            @Override
+            public View getInfoWindow(Marker arg0) {
+                return null;
+            }
+
+            // Defines the contents of the InfoWindow
+            @Override
+            public View getInfoContents(Marker arg0) {
+
+                // Getting view from the layout file info_window_layout
+                View v = getLayoutInflater().inflate(R.layout.window_layout, null);
+
+                // Getting reference to the TextView to set latitude
+                TextView tvLat = (TextView) v.findViewById(R.id.beacon_title1);
+
+                // Getting reference to the TextView to set longitude
+                ImageView img = (ImageView) v.findViewById(R.id.goat);
+
+                // Setting the latitude
+                tvLat.setText(arg0.getTitle());
+                // Returning the view containing InfoWindow contents
+                return v;
+
+            }
+        });
+
         //mMap.getUiSettings().setAllGesturesEnabled(false);
+    }
+
+    private void loadAllMarkers() {
+        Marker mc = mMap.addMarker(new MarkerOptions().position(new LatLng(38.863940, -77.060118)).title("McDonald's").icon(BitmapDescriptorFactory.fromBitmap(bitmapSizeByScale(BitmapFactory.decodeResource(getResources(), R.drawable.red_pin), 0.6f))));
+        ids.put(mc.getTitle(), "0b");
+        Marker hack = mMap.addMarker(new MarkerOptions().position(new LatLng(38.853940, -77.080118)).title("IncubateDC").icon(BitmapDescriptorFactory.fromBitmap(bitmapSizeByScale(BitmapFactory.decodeResource(getResources(), R.drawable.red_pin), 0.4f))));
+        ids.put(hack.getTitle(), "1");
+    }
+
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        overridePendingTransition(R.anim.pull_in_up, R.anim.push_out_down);
     }
 
     public Bitmap bitmapSizeByScale( Bitmap bitmapIn, float scall_zero_to_one_f) {
@@ -308,6 +416,16 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     public void onStop() {
         super.onStop();
         storeData("callsMade", Integer.toString(reloadedTimes));
+    }
+
+    @Override
+    public boolean onMarkerClick(Marker marker) {
+        Log.d("GU", "" + marker.getTitle().equals("Your location!"));
+        if(marker.getTitle().equals("Your location!")) {
+            Log.d("GU", "" + marker.getTitle().equals("Your location!"));
+            return true;
+        }
+        return false;
     }
 
     public interface OnFragmentInteractionListener {
@@ -438,6 +556,46 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
                     }
                 }
             }
+        }
+    }
+
+
+    class MapRetriever extends AsyncTask< Void, Void, String > {
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+
+        }
+
+        @Override
+        protected String doInBackground(Void...params) {
+            Socket socket = null;
+            ObjectOutputStream oos = null;
+            ObjectInputStream ois = null;
+            String message = "";
+            try {
+                socket = new Socket("alaskapi4713.ddns.net", 1337);
+                oos = new ObjectOutputStream(socket.getOutputStream());
+                oos.writeObject("retrieveschedule");
+                ois = new ObjectInputStream(socket.getInputStream());
+                message = (String) ois.readObject();
+                ois.close();
+                oos.close();
+                socket.close();
+            } catch (ClassNotFoundException e) {
+                return "errorcla";
+            } catch (UnknownHostException e) {
+                return "erroruhe";
+            } catch (SocketTimeoutException e) {
+                return "errorste";
+            } catch (Exception e) {
+                return "errorio";
+            }
+            return message;
+        }
+
+        protected void onPostExecute(Boolean result) {
+
         }
     }
 }

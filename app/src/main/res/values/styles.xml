@@ -25,9 +25,9 @@
         <item name="colorButtonNormal">#2196F3</item>
         <item name="android:textColorPrimary">#fff</item>
     </style>
-    <style name="GreenButton" parent="Widget.AppCompat.Button.Colored">
+    <style name="Button" parent="Widget.AppCompat.Button.Colored">
         <item name="colorButtonNormal">@color/colorAccent</item>
-        <item name="android:textColorPrimary">#fff</item>
+        <item name="android:textColorPrimary">#FFFFFF</item>
     </style>
 
     <style name="AppTheme.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
