@@ -46,6 +46,7 @@ import com.wefika.flowlayout.FlowLayout;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import uk.co.deanwild.materialshowcaseview.MaterialShowcaseSequence;
 import uk.co.deanwild.materialshowcaseview.ShowcaseConfig;
@@ -114,6 +115,16 @@ public class MainActivity extends AppCompatActivity {
                 "Add beacons at your current location", "GOT IT");
 
         sequence.start();
+
+        Button but = (Button) findViewById(R.id.map_activity);
+        but.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent i = new Intent(MainActivity.this, MapActivity.class);
+                startActivity(i);
+                overridePendingTransition(R.anim.pull_in_down, R.anim.push_out_up);
+            }
+        });
 
     }
 
@@ -202,7 +213,7 @@ public class MainActivity extends AppCompatActivity {
                         });
                         flowLayout.addView(button, 0);
                         float y = button.getY();
-                        y += 2;
+                        y += 5;
                         button.setY(y);
                     }
                 })
