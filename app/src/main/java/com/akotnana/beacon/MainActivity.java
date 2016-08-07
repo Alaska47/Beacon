@@ -101,7 +101,7 @@ public class MainActivity extends AppCompatActivity {
         ShowcaseConfig config = new ShowcaseConfig();
         config.setDelay(500); // half second between each showcase view
 
-        MaterialShowcaseSequence sequence = new MaterialShowcaseSequence(this);
+        MaterialShowcaseSequence sequence = new MaterialShowcaseSequence(this, "first");
 
         sequence.setConfig(config);
 

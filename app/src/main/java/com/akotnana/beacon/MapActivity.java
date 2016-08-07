@@ -7,6 +7,7 @@ import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.location.Location;
 import android.net.Uri;
 import android.os.Build;
@@ -15,6 +16,7 @@ import android.os.Message;
 import android.support.design.widget.TextInputEditText;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.PermissionChecker;
+import android.support.v4.content.res.ResourcesCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -33,6 +35,7 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
+import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.VisibleRegion;
 import com.google.maps.android.SphericalUtil;
 
@@ -61,7 +64,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         setContentView(R.layout.activity_map);
 
 
-        if(!selfPermissionGranted(Manifest.permission.ACCESS_FINE_LOCATION) || !selfPermissionGranted(Manifest.permission.ACCESS_COARSE_LOCATION)) {
+        if (!selfPermissionGranted(Manifest.permission.ACCESS_FINE_LOCATION) || !selfPermissionGranted(Manifest.permission.ACCESS_COARSE_LOCATION)) {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION},
                     PERMISSIONS_MAP);
         }
@@ -92,7 +95,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         mMapView.onCreate(mBundle);
         mMapView.getMapAsync(this);
         String intermediate = (getData("callsMade"));
-        if(intermediate.equals("")) {
+        if (intermediate.equals("")) {
             reloadedTimes = 0;
             storeData("callsMade", Integer.toString(reloadedTimes));
             storeData("lastRetrieved", Long.toString(System.currentTimeMillis()));
@@ -105,13 +108,14 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     }
 
     private void toggleMode(View v) {
-        if(mMap.getMapType() == GoogleMap.MAP_TYPE_NORMAL) {
+        if (mMap.getMapType() == GoogleMap.MAP_TYPE_NORMAL) {
             mMap.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
-        } else if(mMap.getMapType() == GoogleMap.MAP_TYPE_SATELLITE) {
+        } else if (mMap.getMapType() == GoogleMap.MAP_TYPE_SATELLITE) {
             mMap.setMapType(GoogleMap.MAP_TYPE_HYBRID);
-        } else if(mMap.getMapType() == GoogleMap.MAP_TYPE_HYBRID) {
+        } else if (mMap.getMapType() == GoogleMap.MAP_TYPE_HYBRID) {
             mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
-        } else {}
+        } else {
+        }
     }
 
     private void returnToCurrent() {
@@ -127,7 +131,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
 
         new Thread(new Runnable() {
             public void run() {
-                while(userLoc == null ) {
+                while (userLoc == null) {
                     try {
                         Thread.sleep(100);
                     } catch (InterruptedException e) {
@@ -137,10 +141,10 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
                 Log.d("Dash", "got location");
                 LatLng newLatLng = new LatLng(userLoc.getLatitude(), userLoc.getLongitude());
                 LatLngBounds bounds = new LatLngBounds.Builder().
-                        include(SphericalUtil.computeOffset(newLatLng, 5 * 1609.344d, 0)).
-                        include(SphericalUtil.computeOffset(newLatLng, 5 * 1609.344d, 90)).
-                        include(SphericalUtil.computeOffset(newLatLng, 5 * 1609.344d, 180)).
-                        include(SphericalUtil.computeOffset(newLatLng, 5 * 1609.344d, 270)).build();
+                        include(SphericalUtil.computeOffset(newLatLng, 2 * 1609.344d, 0)).
+                        include(SphericalUtil.computeOffset(newLatLng, 2 * 1609.344d, 90)).
+                        include(SphericalUtil.computeOffset(newLatLng, 2 * 1609.344d, 180)).
+                        include(SphericalUtil.computeOffset(newLatLng, 2 * 1609.344d, 270)).build();
                 final CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngBounds(bounds, 0);
                 runOnUiThread(new Runnable() {
                     public void run() {
@@ -163,6 +167,11 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
+
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        } else {
+            mMap.setMyLocationEnabled(true);
+        }
 
         Log.d("DashboardFragment", "map ready");
 
@@ -189,16 +198,19 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
                     }
                     LatLng newLatLng = new LatLng(userLoc.getLatitude(), userLoc.getLongitude());
                     LatLngBounds bounds = new LatLngBounds.Builder().
-                            include(SphericalUtil.computeOffset(newLatLng, 10 * 1609.344d, 0)).
-                            include(SphericalUtil.computeOffset(newLatLng, 10 * 1609.344d, 90)).
-                            include(SphericalUtil.computeOffset(newLatLng, 10 * 1609.344d, 180)).
-                            include(SphericalUtil.computeOffset(newLatLng, 10 * 1609.344d, 270)).build();
+                            include(SphericalUtil.computeOffset(newLatLng, 2 * 1609.344d, 0)).
+                            include(SphericalUtil.computeOffset(newLatLng, 2 * 1609.344d, 90)).
+                            include(SphericalUtil.computeOffset(newLatLng, 2 * 1609.344d, 180)).
+                            include(SphericalUtil.computeOffset(newLatLng, 2 * 1609.344d, 270)).build();
                     final CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngBounds(bounds, 0);
                     runOnUiThread(new Runnable() {
                         public void run() {
                             mMap.moveCamera(cameraUpdate);
+                            mMap.addMarker(new MarkerOptions().position(new LatLng(userLoc.getLatitude(), userLoc.getLongitude())).title("Test").icon(BitmapDescriptorFactory.fromBitmap(bitmapSizeByScale(BitmapFactory.decodeResource(getResources(), R.drawable.red_pin), 0.4f))));
+                            mMap.addMarker(new MarkerOptions().position(new LatLng(userLoc.getLatitude() + 0.005d, userLoc.getLongitude() - 0.005d)).title("Huge").icon(BitmapDescriptorFactory.fromBitmap(bitmapSizeByScale(BitmapFactory.decodeResource(getResources(), R.drawable.red_pin), 0.8f))));
                         }
                     });
+
                 }
             }).start();
         } else {
@@ -217,8 +229,16 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
                 handler.sendEmptyMessageDelayed(MESSAGE_ID_READ_CAMERA_POSITION, 1000);
             }
         });
+        //mMap.getUiSettings().setAllGesturesEnabled(false);
+    }
 
-        mMap.getUiSettings().setAllGesturesEnabled(false);
+    public Bitmap bitmapSizeByScale( Bitmap bitmapIn, float scall_zero_to_one_f) {
+
+        Bitmap bitmapOut = Bitmap.createScaledBitmap(bitmapIn,
+                Math.round(bitmapIn.getWidth() * scall_zero_to_one_f),
+                Math.round(bitmapIn.getHeight() * scall_zero_to_one_f), false);
+
+        return bitmapOut;
     }
 
     public boolean selfPermissionGranted(String permission) {
