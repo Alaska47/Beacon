@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:background="@color/natural_bg"
+    android:orientation="vertical"
+    android:layout_height="match_parent"
+    tools:context=".activities.MainActivity" >
+
+    <ScrollView
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:fillViewport="true" >
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:elevation="5dp"
+                android:padding="15dp"
+                android:background="@color/white"
+                android:layout_marginBottom="10dp"
+                android:gravity="center_horizontal">
+
+                <Button
+                    android:theme="@style/Button"
+                    android:id="@+id/photoCapture"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Add photo" />
+
+                <com.makeramen.roundedimageview.RoundedImageView
+                    xmlns:app="http://schemas.android.com/apk/res-auto"
+                    android:id="@+id/image_from_camera"
+                    android:layout_width="200dp"
+                    android:layout_height="300dp"
+                    android:layout_marginTop="10dp"
+                    android:src="@drawable/concert_crowd"
+                    android:visibility="gone"
+                    android:scaleType="fitCenter"
+                    app:riv_corner_radius="20dip" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/tags_layout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:elevation="5dp"
+                android:padding="15dp"
+                android:visibility="gone"
+                android:background="@color/white"
+                android:layout_marginBottom="10dp"
+                android:gravity="center_horizontal">
+
+                <android.support.design.widget.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    app:counterEnabled="true"
+                    app:counterMaxLength="50"
+                    app:counterTextAppearance="@style/counterText"
+                    app:counterOverflowTextAppearance="@style/counterOverride" >
+                    <EditText
+                        android:layout_width="match_parent"
+                        android:id="@+id/title"
+                        android:layout_height="wrap_content"
+                        android:imeOptions="actionDone"
+                        android:inputType="textNoSuggestions"
+                        android:minWidth="350dp"
+                        android:hint="Title (optional)"
+                        app:backgroundTint="@android:color/white" />
+                </android.support.design.widget.TextInputLayout>
+
+                <com.wefika.flowlayout.FlowLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:id="@+id/interest_layout"
+                    android:gravity="start|top"
+                    android:padding="10dp" >
+
+                    <ImageButton
+                        android:theme="@style/BlueButton"
+                        android:layout_width="wrap_content"
+                        android:layout_marginTop="5dp"
+                        android:clickable="true"
+                        android:padding="5dp"
+                        android:id="@+id/add_button"
+                        android:layout_marginLeft="5dp"
+                        android:layout_marginBottom="5dp"
+                        android:layout_marginRight="5dp"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/rounded_button"
+                        android:src="@drawable/ic_add_white_24dp"/>
+
+                </com.wefika.flowlayout.FlowLayout>
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </ScrollView>
+</RelativeLayout>
